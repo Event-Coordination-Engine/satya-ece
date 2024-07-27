@@ -9,7 +9,7 @@ class User(Base):
     user_id = Column(Integer,primary_key = True)
     name = Column(String,nullable = False)
     email = Column(String, nullable = False)
-    phone_numer = Column(String, nullable = False)
+    phone_number = Column(String, nullable = False)
     password = Column(String, nullable = False)
     registered_date = Column(DateTime, default = datetime.now(), nullable = False)
     role = Column(String, nullable = False, default = 'USER')
