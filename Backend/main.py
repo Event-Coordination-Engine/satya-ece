@@ -6,6 +6,7 @@ from dto import UserRegistrationDto,LoginDto,LoginResponseDto
 from models import User
 import re
 import json
+from password_encrypt_decrypt import password_encrypt,password_decrypt
 
 Base.metadata.create_all(bind=engine)
 
@@ -45,8 +46,10 @@ def user_registration(user : UserRegistrationDto, database : db_dependency):
     phone_number_regex = r'^\+?[\d\s\-\(\)\.]{6,15}$'
     if not re.match(phone_number_regex, user.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number")
+    
+    encrypted_password = password_encrypt(user.password)
 
-    user_details = User(name = user.name, email = user.email, password = user.password, 
+    user_details = User(name = user.name, email = user.email, password = encrypted_password, 
                         phone_number = user.phone_number)
     database.add(user_details)
     database.commit()
@@ -58,12 +61,13 @@ def user_registration(user : UserRegistrationDto, database : db_dependency):
 
 @app.post("/user/login")
 def user_login(login_user: LoginDto, database:db_dependency):
-    user_obj = database.query(User).filter(login_user.email == User.email).filter(login_user.password == User.password).first()
-
+    user_obj = database.query(User).filter(login_user.email == User.email).first()
     if not user_obj:
-        raise HTTPException(status_code=404,detail="User not found")
-    
-    
+        raise HTTPException(status_code=404,detail="Email not exist")
+
+    decrypt_password = password_decrypt(login_user.password,user_obj.password.encode('utf-8'))
+    if not decrypt_password:
+        raise HTTPException(status_code=404,detail="Wrong password")
     
     login_response = LoginResponseDto(name=user_obj.name, email= user_obj.email,user_id=user_obj.user_id,
                                     role=user_obj.role,phone_number=user_obj.phone_number,
